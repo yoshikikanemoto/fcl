@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.5)
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -129,6 +129,13 @@ endif()
 include_directories(${CCD_INCLUDE_DIRS})
 link_directories(${CCD_LIBRARY_DIRS})
 
+find_package(Boost COMPONENTS date_time filesystem system unit_test_framework)
+option(FCL_BUILD_TESTS "Build FCL tests" ${Boost_FOUND})
+if(FCL_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
+
 add_subdirectory(include/fcl)
 add_subdirectory(src)
 
@@ -154,9 +161,3 @@ configure_file(
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/CMakeModules/cmake_uninstall.cmake")
 
-find_package(Boost COMPONENTS date_time filesystem system unit_test_framework)
-option(FCL_BUILD_TESTS "Build FCL tests" ${Boost_FOUND})
-if(FCL_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(test)
-endif()

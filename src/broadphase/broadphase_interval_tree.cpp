@@ -246,7 +246,7 @@ void IntervalTreeCollisionManager::update()
 }
 
 
-void IntervalTreeCollisionManager::update(CollisionObject* updated_obj)
+  void IntervalTreeCollisionManager::update(CollisionObject* updated_obj, bool shouldSetup)
 {
   AABB old_aabb;
   const AABB& new_aabb = updated_obj->getAABB();
@@ -285,13 +285,13 @@ void IntervalTreeCollisionManager::update(CollisionObject* updated_obj)
         it->value = new_aabb.max_[i];
         break;
       }
-    }         
+    }
 
     std::sort(endpoints[i].begin(), endpoints[i].end());
   }
 }
 
-void IntervalTreeCollisionManager::update(const std::vector<CollisionObject*>& updated_objs)
+void IntervalTreeCollisionManager::update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup)
 {
   for(size_t i = 0; i < updated_objs.size(); ++i)
     update(updated_objs[i]);

@@ -85,13 +85,13 @@ public:
   virtual void update() = 0;
 
   /// @brief update the manager by explicitly given the object updated
-  virtual void update(CollisionObject* updated_obj)
+  virtual void update(CollisionObject* updated_obj, bool shouldSetup = true)
   {
     update();
   }
 
   /// @brief update the manager by explicitly given the set of objects update
-  virtual void update(const std::vector<CollisionObject*>& updated_objs)
+  virtual void update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup = true)
   {
     update();
   }

@@ -429,23 +429,27 @@ void SaPCollisionManager::update_(SaPAABB* updated_aabb)
   }
 }
 
-void SaPCollisionManager::update(CollisionObject* updated_obj)
+  void SaPCollisionManager::update(CollisionObject* updated_obj, bool shouldSetup)
 {
   update_(obj_aabb_map[updated_obj]);
 
   updateVelist();
 
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
-void SaPCollisionManager::update(const std::vector<CollisionObject*>& updated_objs)
+  void SaPCollisionManager::update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup)
 {
   for(size_t i = 0; i < updated_objs.size(); ++i)
     update_(obj_aabb_map[updated_objs[i]]);
 
   updateVelist();
 
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
 void SaPCollisionManager::update()

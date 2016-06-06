@@ -714,7 +714,7 @@ void DynamicAABBTreeCollisionManager::update()
   setup();
 }
 
-void DynamicAABBTreeCollisionManager::update_(CollisionObject* updated_obj)
+  void DynamicAABBTreeCollisionManager::update_(CollisionObject* updated_obj)
 {
   DynamicAABBTable::const_iterator it = table.find(updated_obj);
   if(it != table.end())
@@ -726,17 +726,21 @@ void DynamicAABBTreeCollisionManager::update_(CollisionObject* updated_obj)
   setup_ = false;
 }
 
-void DynamicAABBTreeCollisionManager::update(CollisionObject* updated_obj)
+  void DynamicAABBTreeCollisionManager::update(CollisionObject* updated_obj, bool shouldSetup)
 {
   update_(updated_obj);
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
-void DynamicAABBTreeCollisionManager::update(const std::vector<CollisionObject*>& updated_objs)
+  void DynamicAABBTreeCollisionManager::update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup)
 {
   for(size_t i = 0, size = updated_objs.size(); i < size; ++i)
     update_(updated_objs[i]);
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
 void DynamicAABBTreeCollisionManager::collide(CollisionObject* obj, void* cdata, CollisionCallBack callback) const

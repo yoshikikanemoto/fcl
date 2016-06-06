@@ -749,17 +749,21 @@ void DynamicAABBTreeCollisionManager_Array::update_(CollisionObject* updated_obj
   setup_ = false;
 }
 
-void DynamicAABBTreeCollisionManager_Array::update(CollisionObject* updated_obj)
+  void DynamicAABBTreeCollisionManager_Array::update(CollisionObject* updated_obj, bool shouldSetup)
 {
   update_(updated_obj);
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
-void DynamicAABBTreeCollisionManager_Array::update(const std::vector<CollisionObject*>& updated_objs)
+  void DynamicAABBTreeCollisionManager_Array::update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup)
 {
   for(size_t i = 0, size = updated_objs.size(); i < size; ++i)
     update_(updated_objs[i]);
-  setup();
+  if( shouldSetup ) {
+    setup();
+  }
 }
 
 

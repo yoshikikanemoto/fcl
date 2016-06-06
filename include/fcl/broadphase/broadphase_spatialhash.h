@@ -118,10 +118,10 @@ public:
   void update();
 
   /// @brief update the manager by explicitly given the object updated
-  void update(CollisionObject* updated_obj);
+void update(CollisionObject* updated_obj, bool shouldSetup = true);
 
   /// @brief update the manager by explicitly given the set of objects update
-  void update(const std::vector<CollisionObject*>& updated_objs);
+void update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup = true);
 
   /// @brief clear the manager
   void clear();

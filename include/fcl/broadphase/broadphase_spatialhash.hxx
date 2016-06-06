@@ -112,7 +112,7 @@ void SpatialHashingCollisionManager<HashTable>::update()
 }
 
 template<typename HashTable>
-void SpatialHashingCollisionManager<HashTable>::update(CollisionObject* updated_obj)
+void SpatialHashingCollisionManager<HashTable>::update(CollisionObject* updated_obj, bool shouldSetup)
 {
   const AABB& new_aabb = updated_obj->getAABB();
   const AABB& old_aabb = obj_aabb_map[updated_obj];
@@ -143,7 +143,7 @@ void SpatialHashingCollisionManager<HashTable>::update(CollisionObject* updated_
 }
 
 template<typename HashTable>
-void SpatialHashingCollisionManager<HashTable>::update(const std::vector<CollisionObject*>& updated_objs)
+void SpatialHashingCollisionManager<HashTable>::update(const std::vector<CollisionObject*>& updated_objs, bool shouldSetup)
 {
   for(size_t i = 0; i < updated_objs.size(); ++i)
     update(updated_objs[i]);

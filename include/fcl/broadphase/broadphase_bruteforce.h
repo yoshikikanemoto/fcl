@@ -60,6 +60,9 @@ public:
   /// @brief remove one object from the manager
   void unregisterObject(CollisionObject* obj);
 
+  /// @brief replace the first object by the second and updates the manager
+  void replaceObject(CollisionObject *oldObj, CollisionObject *newObj, bool shouldSetup = true);
+
   /// @brief initialize the manager, related with the specific type of manager
   void setup();
 

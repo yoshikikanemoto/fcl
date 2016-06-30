@@ -675,6 +675,28 @@ void DynamicAABBTreeCollisionManager::unregisterObject(CollisionObject* obj)
   dtree.remove(node);
 }
 
+void DynamicAABBTreeCollisionManager::replaceObject(CollisionObject* oldObj, CollisionObject* newObj, bool shouldSetup)
+{
+  DynamicAABBTable::iterator = table.find(oldObj);
+  if( it == table.end() ) {
+    registerObject(newObj);
+  } else {
+    DynamicAABBNode* node = it->second;
+    table.erase(oldObj);
+    node->data = newObj;
+    table[newObj] = node;
+
+    if(!node->bv.equal(newObj->getAABB())) {
+      dtree.update(node, newObj->getAABB());
+    }
+    setup_ = false;
+
+    if( shouldSetup ) {
+      setup();
+    }
+  }
+}
+
 void DynamicAABBTreeCollisionManager::setup()
 {
   if(!setup_)

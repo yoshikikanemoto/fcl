@@ -78,6 +78,13 @@ public:
   /// @brief remove one object from the manager
   virtual void unregisterObject(CollisionObject* obj) = 0;
 
+  /// @brief replace the first object by the second and updates the manager
+  virtual void replaceObject(CollisionObject *oldObj, CollisionObject *newObj, bool shouldSetup = true)
+  {
+    unregisterObject(oldObj);
+    registerObject(newObj);
+  }
+
   /// @brief initialize the manager, related with the specific type of manager
   virtual void setup() = 0;
 

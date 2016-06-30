@@ -57,9 +57,9 @@ void NaiveCollisionManager::registerObject(CollisionObject* obj)
   objs.push_back(obj);
 }
 
-void NaiveCollisionManager::replaceObject(CollisionObject *oldObj, CollisionObject *newObj, bool shouldSetup = true)
+void NaiveCollisionManager::replaceObject(CollisionObject *oldObj, CollisionObject *newObj, bool shouldSetup)
 {
-  std::vector::iterator it = std::find(objs.begin(), objs.end(), oldObj);
+  std::list<CollisionObject*>::iterator it = std::find(objs.begin(), objs.end(), oldObj);
   if( it == objs.end() ) {
     objs.push_back(newObj);
   } else {

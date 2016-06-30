@@ -677,7 +677,7 @@ void DynamicAABBTreeCollisionManager::unregisterObject(CollisionObject* obj)
 
 void DynamicAABBTreeCollisionManager::replaceObject(CollisionObject* oldObj, CollisionObject* newObj, bool shouldSetup)
 {
-  DynamicAABBTable::iterator = table.find(oldObj);
+  DynamicAABBTable::iterator it = table.find(oldObj);
   if( it == table.end() ) {
     registerObject(newObj);
   } else {

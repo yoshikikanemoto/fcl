@@ -206,10 +206,28 @@ public:
     }
     else
     {
-      Vec3f center = t.transform(cgeom->aabb_center);
-      Vec3f delta(cgeom->aabb_radius);
-      aabb.min_ = center - delta;
-      aabb.max_ = center + delta;
+      // TODO : see if it is possible to use directly the quaternion rotation
+      aabb.min_ = aabb.max_ = t.getTranslation();
+      const Matrix3f& rot = t.getRotation();
+      const AABB& aabb_local = cgeom->aabb_local;
+
+      for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+          float e = rot(i, j) * aabb_local.min_[j];
+          float f = rot(i, j) * aabb_local.max_[j];
+          if(e < f) {
+            aabb.min_[i] += e;
+            aabb.max_[i] += f;
+          } else {
+            aabb.min_[i] += f;
+            aabb.max_[i] += e;
+          }
+        }
+      }
+//      Vec3f center = t.transform(cgeom->aabb_center);
+//      Vec3f delta(cgeom->aabb_radius);
+//      aabb.min_ = center - delta;
+//      aabb.max_ = center + delta;
     }
   }
 

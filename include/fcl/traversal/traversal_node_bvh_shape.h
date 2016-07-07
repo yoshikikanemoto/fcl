@@ -744,7 +744,13 @@ public:
   {
     if((c >= this->result->min_distance - abs_err) && (c * (1 + rel_err) >= this->result->min_distance))
       return true;
-    return false;
+
+    if( this->request.enable_approx_dist && c > this->request.approx_dist ) {
+      this->result->update(c, this->model1, this->model2, DistanceResult::NONE, DistanceResult::NONE);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   Vec3f* vertices;
@@ -959,7 +965,12 @@ public:
   {
     if((c >= this->result->min_distance - abs_err) && (c * (1 + rel_err) >= this->result->min_distance))
       return true;
-    return false;
+    if( this->request.enable_approx_dist && c > this->request.approx_dist ) {
+      this->result->update(c, this->model1, this->model2, DistanceResult::NONE, DistanceResult::NONE);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   Vec3f* vertices;

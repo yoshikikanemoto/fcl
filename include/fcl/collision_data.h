@@ -341,7 +341,11 @@ struct DistanceRequest
   /// @brief narrow phase solver type
   GJKSolverType gjk_solver_type;
 
+  /// @brief whether we enable approximate distance evaluation
+  bool enable_approx_dist;
 
+  /// @brief approximate distance under which objects are considered in collision
+  FCL_REAL approx_dist;
 
   DistanceRequest(bool enable_nearest_points_ = false,
                   FCL_REAL rel_err_ = 0.0,
@@ -349,7 +353,9 @@ struct DistanceRequest
                   GJKSolverType gjk_solver_type_ = GST_LIBCCD) : enable_nearest_points(enable_nearest_points_),
                                                                 rel_err(rel_err_),
                                                                 abs_err(abs_err_),
-                                                                gjk_solver_type(gjk_solver_type_)
+                                                                gjk_solver_type(gjk_solver_type_),
+                                                                enable_approx_dist(false),
+                                                                approx_dist(0.0)
   {
   }
 

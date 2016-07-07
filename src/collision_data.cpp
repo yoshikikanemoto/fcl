@@ -52,7 +52,7 @@ bool CollisionRequest::isSatisfied(const CollisionResult& result) const
 
 bool DistanceRequest::isSatisfied(const DistanceResult& result) const
 {
-  return (result.min_distance <= 0);
+  return (result.min_distance <= approx_dist);
 }
 
 }

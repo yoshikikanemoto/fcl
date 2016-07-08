@@ -41,7 +41,7 @@
 #include "fcl/traversal/traversal_node_setup.h"
 #include "fcl/collision_node.h"
 #include "fcl/narrowphase/narrowphase.h"
-
+#include "fcl/container.h"
 
 namespace fcl
 {
@@ -443,6 +443,30 @@ std::size_t BVHCollide(const CollisionGeometry* o1, const Transform3f& tf1, cons
   return BVHCollide<T_BVH>(o1, tf1, o2, tf2, request, result);
 }
 
+template<typename NarrowPhaseSolver>
+std::size_t ContainerGeomCollide(const CollisionGeometry* o1, const Transform3f& tf1, const CollisionGeometry* o2, const Transform3f& tf2,
+                                 const NarrowPhaseSolver* nsolver,
+                                 const CollisionRequest& request, CollisionResult& result) {
+  static CollisionFunctionMatrix<NarrowPhaseSolver> table;
+
+  if(request.isSatisfied(result)) return result.numContacts();
+
+  const Container* container = static_cast<const Container*>(o1);
+  for(auto collobj : container->getContent()) {
+    std::shared_ptr<const CollisionGeometry> pcollgeom = collobj->collisionGeometry();
+    table.collision_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+
+    if(request.isSatisfied(result)) return result.numContacts();
+  }
+  return result.numContacts();
+}
+
+template<typename NarrowPhaseSolver>
+std::size_t GeomContainerCollide(const CollisionGeometry* o1, const Transform3f& tf1, const CollisionGeometry* o2, const Transform3f& tf2,
+                                 const NarrowPhaseSolver* nsolver,
+                                 const CollisionRequest& request, CollisionResult& result) {
+  return ContainerGeomCollide(o2, tf2, o1, tf1, nsolver, request, result);
+}
 
 template<typename NarrowPhaseSolver>
 CollisionFunctionMatrix<NarrowPhaseSolver>::CollisionFunctionMatrix()
@@ -631,6 +655,46 @@ CollisionFunctionMatrix<NarrowPhaseSolver>::CollisionFunctionMatrix()
   collision_matrix[BV_kIOS][BV_kIOS] = &BVHCollide<kIOS, NarrowPhaseSolver>;
   collision_matrix[BV_OBBRSS][BV_OBBRSS] = &BVHCollide<OBBRSS, NarrowPhaseSolver>;
 
+  collision_matrix[CONTAINER][GEOM_BOX] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_SPHERE] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_ELLIPSOID] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_CAPSULE] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_CONE] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_CYLINDER] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_CONVEX] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_PLANE] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][GEOM_HALFSPACE] = &ContainerGeomCollide<NarrowPhaseSolver>;
+
+  collision_matrix[GEOM_BOX][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_SPHERE][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_ELLIPSOID][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_CAPSULE][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_CONE][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_CYLINDER][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_CONVEX][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_PLANE][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[GEOM_HALFSPACE][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+
+  collision_matrix[CONTAINER][CONTAINER] = &ContainerGeomCollide<NarrowPhaseSolver>;
+
+  collision_matrix[CONTAINER][BV_AABB] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_OBB] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_RSS] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_OBBRSS] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_kIOS] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_KDOP16] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_KDOP18] = &ContainerGeomCollide<NarrowPhaseSolver>;
+  collision_matrix[CONTAINER][BV_KDOP24] = &ContainerGeomCollide<NarrowPhaseSolver>;
+
+  collision_matrix[BV_AABB][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_OBB][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_RSS][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_OBBRSS][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_kIOS][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_KDOP16][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_KDOP18][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+  collision_matrix[BV_KDOP24][CONTAINER] = &GeomContainerCollide<NarrowPhaseSolver>;
+
 #if FCL_HAVE_OCTOMAP
   collision_matrix[GEOM_OCTREE][GEOM_BOX] = &OcTreeShapeCollide<Box, NarrowPhaseSolver>;
   collision_matrix[GEOM_OCTREE][GEOM_SPHERE] = &OcTreeShapeCollide<Sphere, NarrowPhaseSolver>;
@@ -671,6 +735,7 @@ CollisionFunctionMatrix<NarrowPhaseSolver>::CollisionFunctionMatrix()
   collision_matrix[BV_KDOP16][GEOM_OCTREE] = &BVHOcTreeCollide<KDOP<16>, NarrowPhaseSolver>;
   collision_matrix[BV_KDOP18][GEOM_OCTREE] = &BVHOcTreeCollide<KDOP<18>, NarrowPhaseSolver>;
   collision_matrix[BV_KDOP24][GEOM_OCTREE] = &BVHOcTreeCollide<KDOP<24>, NarrowPhaseSolver>;
+
 #endif
 }
 

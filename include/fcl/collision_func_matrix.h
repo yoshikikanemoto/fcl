@@ -61,6 +61,7 @@ struct CollisionFunctionMatrix
   CollisionFunc collision_matrix[NODE_COUNT][NODE_COUNT];
 
   CollisionFunctionMatrix();
+
 };
 
 

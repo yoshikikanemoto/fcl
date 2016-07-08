@@ -395,7 +395,7 @@ public:
 
   /// @brief invalid contact primitive information
   static const int NONE = -1;
-  
+
   DistanceResult(FCL_REAL min_distance_ = std::numeric_limits<FCL_REAL>::max()) : min_distance(min_distance_), 
                                                                                   o1(NULL),
                                                                                   o2(NULL),

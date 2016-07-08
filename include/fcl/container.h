@@ -3,7 +3,7 @@ namespace fcl
   class Container : public CollisionGeometry
   {
   private:
-    std::vector< std::pair<std::shared_ptr<CollisionObject> > content;
+    std::vector< std::shared_ptr<CollisionObject> > content;
   public:
     Container()
       {
@@ -15,12 +15,12 @@ namespace fcl
 
     virtual OBJECT_TYPE getObjectType() const { return OT_CONTAINER; }
 
-    virtual OBJECT_TYPE getNodeType() const { return CONTAINER; }
+    virtual NODE_TYPE getNodeType() const { return CONTAINER; }
 
     void computeLocalAABB()
     {
       for(auto collision_object_ptr : content) {
-        collision_object_ptr->ComputeAABB();
+        collision_object_ptr->computeAABB();
         aabb_local += collision_object_ptr->getAABB();
       }
       aabb_center = aabb_local.center();
@@ -33,9 +33,9 @@ namespace fcl
       Vec3f com;
       FCL_REAL volume;
       for(auto collision_object_ptr : content) {
-        const CollisionGeometry& cgeom = collision_object_ptr->getCollisionGeometry();
-        FCL_REAL geomvolume = cgeom.computeVolume();
-        com += geomvolume * cgeom.computeCOM();
+        const std::shared_ptr<const CollisionGeometry> cgeom = collision_object_ptr->collisionGeometry();
+        FCL_REAL geomvolume = cgeom->computeVolume();
+        com += geomvolume * cgeom->computeCOM();
         volume += geomvolume;
       }
       if( volume < 1 - std::numeric_limits<FCL_REAL>::epsilon() ||
@@ -47,15 +47,19 @@ namespace fcl
 
     // TODO
     virtual Matrix3f computeMomentofInertia() const {
-      return Matrix3f()
+      return Matrix3f();
     }
 
     virtual FCL_REAL computeVolume() const {
       FCL_REAL volume;
       for(auto collision_object_ptr : content) {
-        volume += collision_object_ptr->computeVolume();
+        volume += collision_object_ptr->collisionGeometry()->computeVolume();
       }
       return volume;
     }
-  }
+
+    const std::vector< std::shared_ptr<CollisionObject> >& getContent() const {
+      return content;
+    }
+  };
 } // fcl

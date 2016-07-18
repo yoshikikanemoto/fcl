@@ -299,7 +299,11 @@ FCL_REAL ContainerGeomDistance(const CollisionGeometry* o1, const Transform3f& t
   const Container* container = static_cast<const Container*>(o1);
   for(auto collobj : container->getContent()) {
     std::shared_ptr<const CollisionGeometry> pcollgeom = collobj->collisionGeometry();
-    table.distance_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+    if( pcollgeom->getObjectType() == OT_GEOM ) {
+      table.distance_matrix[o2->getNodeType()][pcollgeom->getNodeType()](o2, tf2, pcollgeom.get(), tf1 * collobj->getTransform(), nsolver, request, result);
+    } else {
+      table.distance_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+    }
 
     if(request.isSatisfied(result)) return result.min_distance;
   }

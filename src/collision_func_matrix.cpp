@@ -454,7 +454,11 @@ std::size_t ContainerGeomCollide(const CollisionGeometry* o1, const Transform3f&
   const Container* container = static_cast<const Container*>(o1);
   for(auto collobj : container->getContent()) {
     std::shared_ptr<const CollisionGeometry> pcollgeom = collobj->collisionGeometry();
-    table.collision_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+    if( pcollgeom->getObjectType() == OT_GEOM ) {
+      table.collision_matrix[o2->getNodeType()][pcollgeom->getNodeType()](o2, tf2, pcollgeom.get(), tf1 * collobj->getTransform(), nsolver, request, result);
+    } else {
+      table.collision_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+    }
 
     if(request.isSatisfied(result)) return result.numContacts();
   }

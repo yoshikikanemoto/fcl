@@ -42,17 +42,17 @@ namespace fcl
 
 bool comparePenDepth(const ContactPoint& _cp1, const ContactPoint& _cp2)
 {
-  return _cp1.penetration_depth < _cp2.penetration_depth;
+    return _cp1.penetration_depth < _cp2.penetration_depth;
 }
 
 bool CollisionRequest::isSatisfied(const CollisionResult& result) const
 {
-  return (!enable_cost) && result.isCollision() && (num_max_contacts <= result.numContacts());
+    return (!enable_cost) && result.isCollision() && (num_max_contacts <= result.numContacts());
 }
 
 bool DistanceRequest::isSatisfied(const DistanceResult& result) const
 {
-  return (result.min_distance <= approx_dist);
+    return (result.min_distance <= approx_collision_dist);
 }
 
 }

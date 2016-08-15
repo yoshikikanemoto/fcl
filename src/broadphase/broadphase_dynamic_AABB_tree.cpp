@@ -35,7 +35,6 @@
 
 /** \author Jia Pan */
 
-#include <cassert>
 #include "fcl/broadphase/broadphase_dynamic_AABB_tree.h"
 
 #if FCL_HAVE_OCTOMAP
@@ -671,9 +670,13 @@ void DynamicAABBTreeCollisionManager::registerObject(CollisionObject* obj)
 void DynamicAABBTreeCollisionManager::unregisterObject(CollisionObject* obj)
 {
   DynamicAABBTable::iterator it = table.find(obj);
-  assert( it != table.end() );
-  dtree.remove(it->second);
-  table.erase(it);
+  if( it != table.end() ) {
+    dtree.remove(it->second);
+    table.erase(it);
+  }
+  else {
+    std::cerr << "collisionObject " << obj << " does not exist in table." << std::endl;
+  }
 }
 
 void DynamicAABBTreeCollisionManager::replaceObject(CollisionObject* oldObj, CollisionObject* newObj, bool shouldSetup)

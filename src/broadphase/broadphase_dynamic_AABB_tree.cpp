@@ -655,9 +655,9 @@ void DynamicAABBTreeCollisionManager::registerObjects(const std::vector<Collisio
       table[other_objs[i]] = node;
       leaves[i] = node;
     }
-   
+
     dtree.init(leaves, tree_init_level);
-   
+
     setup_ = true;
   }
 }
@@ -670,9 +670,10 @@ void DynamicAABBTreeCollisionManager::registerObject(CollisionObject* obj)
 
 void DynamicAABBTreeCollisionManager::unregisterObject(CollisionObject* obj)
 {
-  DynamicAABBNode* node = table[obj];
-  table.erase(obj);
-  dtree.remove(node);
+  DynamicAABBTable::iterator it = table.find(obj);
+  assert( it != table.end() );
+  dtree.remove(it->second);
+  table.erase(it);
 }
 
 void DynamicAABBTreeCollisionManager::replaceObject(CollisionObject* oldObj, CollisionObject* newObj, bool shouldSetup)

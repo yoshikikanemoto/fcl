@@ -155,7 +155,7 @@ public:
 
 private:
   HierarchyTree<AABB> dtree;
-  std::unordered_map<CollisionObject*, DynamicAABBNode*> table;
+  DynamicAABBTable table;
 
   bool setup_;
 

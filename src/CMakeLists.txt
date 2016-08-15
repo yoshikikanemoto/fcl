@@ -9,6 +9,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${FCL_VERSION}
   SOVERSION ${FCL_ABI_VERSION})
 
+# temporary check for OCTOMAP for cmake 2.8.11...
 if (FCL_HAVE_OCTOMAP)
   target_link_libraries(${PROJECT_NAME}
     LINK_PUBLIC ${OCTOMAP_LIBRARIES}

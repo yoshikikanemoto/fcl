@@ -35,7 +35,6 @@
 
 /** \author Jia Pan */
 
-
 #include "fcl/broadphase/broadphase_dynamic_AABB_tree.h"
 
 #if FCL_HAVE_OCTOMAP
@@ -655,9 +654,9 @@ void DynamicAABBTreeCollisionManager::registerObjects(const std::vector<Collisio
       table[other_objs[i]] = node;
       leaves[i] = node;
     }
-   
+
     dtree.init(leaves, tree_init_level);
-   
+
     setup_ = true;
   }
 }
@@ -670,9 +669,14 @@ void DynamicAABBTreeCollisionManager::registerObject(CollisionObject* obj)
 
 void DynamicAABBTreeCollisionManager::unregisterObject(CollisionObject* obj)
 {
-  DynamicAABBNode* node = table[obj];
-  table.erase(obj);
-  dtree.remove(node);
+  DynamicAABBTable::iterator it = table.find(obj);
+  if( it != table.end() ) {
+    dtree.remove(it->second);
+    table.erase(it);
+  }
+  else {
+    std::cerr << "collisionObject " << obj << " does not exist in table." << std::endl;
+  }
 }
 
 void DynamicAABBTreeCollisionManager::replaceObject(CollisionObject* oldObj, CollisionObject* newObj, bool shouldSetup)

@@ -35,7 +35,7 @@
 
 /** \author Jia Pan */
 
-
+#include <cassert>
 #include "fcl/broadphase/broadphase_dynamic_AABB_tree.h"
 
 #if FCL_HAVE_OCTOMAP

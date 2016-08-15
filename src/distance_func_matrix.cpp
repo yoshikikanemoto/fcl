@@ -40,6 +40,7 @@
 #include "fcl/collision_node.h"
 #include "fcl/traversal/traversal_node_setup.h"
 #include "fcl/narrowphase/narrowphase.h"
+#include "fcl/container.h"
 
 namespace fcl
 {
@@ -286,6 +287,36 @@ FCL_REAL BVHDistance(const CollisionGeometry* o1, const Transform3f& tf1, const 
   return BVHDistance<T_BVH>(o1, tf1, o2, tf2, request, result);
 }
 
+
+template<typename NarrowPhaseSolver>
+FCL_REAL ContainerGeomDistance(const CollisionGeometry* o1, const Transform3f& tf1, const CollisionGeometry* o2, const Transform3f& tf2,
+                                 const NarrowPhaseSolver* nsolver,
+                                 const DistanceRequest& request, DistanceResult& result) {
+  if(request.isSatisfied(result)) return result.min_distance;
+
+  static DistanceFunctionMatrix<NarrowPhaseSolver> table;
+
+  const Container* container = static_cast<const Container*>(o1);
+  for(auto collobj : container->getContent()) {
+    std::shared_ptr<const CollisionGeometry> pcollgeom = collobj->collisionGeometry();
+    if( pcollgeom->getObjectType() == OT_GEOM ) {
+      table.distance_matrix[o2->getNodeType()][pcollgeom->getNodeType()](o2, tf2, pcollgeom.get(), tf1 * collobj->getTransform(), nsolver, request, result);
+    } else {
+      table.distance_matrix[pcollgeom->getNodeType()][o2->getNodeType()](pcollgeom.get(), tf1 * collobj->getTransform(), o2, tf2, nsolver, request, result);
+    }
+
+    if(request.isSatisfied(result)) return result.min_distance;
+  }
+  return result.min_distance;
+}
+
+template<typename NarrowPhaseSolver>
+FCL_REAL GeomContainerDistance(const CollisionGeometry* o1, const Transform3f& tf1, const CollisionGeometry* o2, const Transform3f& tf2,
+                                 const NarrowPhaseSolver* nsolver,
+                                 const DistanceRequest& request, DistanceResult& result) {
+  return ContainerGeomDistance(o2, tf2, o1, tf1, nsolver, request, result);
+}
+
 template<typename NarrowPhaseSolver>
 DistanceFunctionMatrix<NarrowPhaseSolver>::DistanceFunctionMatrix()
 {
@@ -474,6 +505,46 @@ DistanceFunctionMatrix<NarrowPhaseSolver>::DistanceFunctionMatrix()
   distance_matrix[BV_RSS][BV_RSS] = &BVHDistance<RSS, NarrowPhaseSolver>;
   distance_matrix[BV_kIOS][BV_kIOS] = &BVHDistance<kIOS, NarrowPhaseSolver>;
   distance_matrix[BV_OBBRSS][BV_OBBRSS] = &BVHDistance<OBBRSS, NarrowPhaseSolver>;
+
+  distance_matrix[CONTAINER][GEOM_BOX] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_SPHERE] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_ELLIPSOID] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_CAPSULE] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_CONE] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_CYLINDER] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_CONVEX] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_PLANE] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][GEOM_HALFSPACE] = &ContainerGeomDistance<NarrowPhaseSolver>;
+
+  distance_matrix[GEOM_BOX][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_SPHERE][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_ELLIPSOID][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_CAPSULE][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_CONE][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_CYLINDER][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_CONVEX][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_PLANE][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[GEOM_HALFSPACE][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+
+  distance_matrix[CONTAINER][CONTAINER] = &ContainerGeomDistance<NarrowPhaseSolver>;
+
+  distance_matrix[CONTAINER][BV_AABB] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_OBB] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_RSS] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_OBBRSS] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_kIOS] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_KDOP16] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_KDOP18] = &ContainerGeomDistance<NarrowPhaseSolver>;
+  distance_matrix[CONTAINER][BV_KDOP24] = &ContainerGeomDistance<NarrowPhaseSolver>;
+
+  distance_matrix[BV_AABB][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_OBB][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_RSS][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_OBBRSS][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_kIOS][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_KDOP16][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_KDOP18][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
+  distance_matrix[BV_KDOP24][CONTAINER] = &GeomContainerDistance<NarrowPhaseSolver>;
 
 #if FCL_HAVE_OCTOMAP
   distance_matrix[GEOM_OCTREE][GEOM_BOX] = &OcTreeShapeDistance<Box, NarrowPhaseSolver>;

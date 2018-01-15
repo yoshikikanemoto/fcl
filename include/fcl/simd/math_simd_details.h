@@ -71,7 +71,7 @@ static inline __m128 vec_sel(__m128 a, __m128 b, const unsigned int* mask)
 
 static inline __m128 vec_sel(__m128 a, __m128 b, unsigned int mask)
 {
-  return vec_sel(a, b, _mm_set1_ps(*(float*)&mask));
+  return vec_sel(a, b, _mm_castsi128_ps(_mm_set1_epi32(mask)));
 }
 
 #define vec_splat(a, e) _mm_shuffle_ps((a), (a), _MM_SHUFFLE((e), (e), (e), (e)))
@@ -140,8 +140,8 @@ struct sse_meta_f4
   inline sse_meta_f4& operator /= (float t) { v = _mm_div_ps(v, _mm_set1_ps(t)); return *this; }
   inline sse_meta_f4 operator - () const 
   {
-    static const union { int i[4]; __m128 m; } negativemask __attribute__ ((aligned(16))) = {{0x80000000, 0x80000000, 0x80000000, 0x80000000}};
-    return sse_meta_f4(_mm_xor_ps(negativemask.m, v));                     
+    static const __m128 negativemask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+    return sse_meta_f4(_mm_xor_ps(negativemask, v));
   }
 } __attribute__ ((aligned (16)));
 
@@ -246,8 +246,8 @@ struct sse_meta_d4
   inline sse_meta_d4& operator /= (double t) { register __m128d d = _mm_set1_pd(t); v[0] = _mm_div_pd(v[0], d); v[1] = _mm_div_pd(v[1], d); return *this; }
   inline sse_meta_d4 operator - () const 
   {
-    static const union { FCL_INT64 i[2]; __m128d m; } negativemask __attribute__ ((aligned(16))) = {{0x8000000000000000, 0x8000000000000000}};
-    return sse_meta_d4(_mm_xor_pd(v[0], negativemask.m), _mm_xor_pd(v[1], negativemask.m));
+    static const __m128d negativemask = _mm_castsi128_pd(_mm_set1_epi64x(0x8000000000000000));
+    return sse_meta_d4(_mm_xor_pd(v[0], negativemask), _mm_xor_pd(v[1], negativemask));
   }
 } __attribute__ ((aligned (16)));
 
@@ -772,17 +772,17 @@ static inline void inverse(__m128 c0, __m128 c1, __m128 c2, __m128 c3,
   Det = _mm_mul_ps(sum,c0);
   Det = _mm_add_ps(Det,_mm_movehl_ps(Det,Det));
 
-  static const union { int i[4]; __m128 m; } Sign_PNPN __attribute__ ((aligned(16))) = {{0x00000000, 0x80000000, 0x00000000, 0x80000000}};
-  static const union { int i[4]; __m128 m; } Sign_NPNP __attribute__ ((aligned(16))) = {{0x80000000, 0x00000000, 0x80000000, 0x00000000}};
-  static const union { float i[4]; __m128 m; } ZERONE __attribute__ ((aligned(16))) = {{1.0f, 0.0f, 0.0f, 1.0f}};
+  static const __m128 Sign_PNPN = _mm_castsi128_ps(_mm_set_epi32(0x80000000, 0x00000000, 0x80000000, 0x00000000));
+  static const __m128 Sign_NPNP = _mm_castsi128_ps(_mm_set_epi32(0x00000000, 0x80000000, 0x00000000, 0x80000000));
+  static const __m128 ZERONE = _mm_set_ps(1.0f, 0.0f, 0.0f, 1.0f);
 
-  __m128 mtL1 = _mm_xor_ps(sum,Sign_PNPN.m);
+  __m128 mtL1 = _mm_xor_ps(sum,Sign_PNPN);
 
   // Calculating the minterms of the second line (using previous results).
   tt = _mm_ror_ps(c0,1);		sum = _mm_mul_ps(tt,r1);
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
-  __m128 mtL2 = _mm_xor_ps(sum,Sign_NPNP.m);
+  __m128 mtL2 = _mm_xor_ps(sum,Sign_NPNP);
 
   // Testing the determinant.
   Det = _mm_sub_ss(Det,_mm_shuffle_ps(Det,Det,1));
@@ -800,10 +800,10 @@ static inline void inverse(__m128 c0, __m128 c1, __m128 c2, __m128 c3,
   tt = _mm_ror_ps(c3,1);		sum = _mm_mul_ps(tt,r1);
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
-  __m128 mtL3 = _mm_xor_ps(sum,Sign_PNPN.m);
+  __m128 mtL3 = _mm_xor_ps(sum,Sign_PNPN);
 
   // Dividing is FASTER than rcp_nr! (Because rcp_nr causes many register-memory RWs).
-  RDet = _mm_div_ss(ZERONE.m, Det); // TODO: just 1.0f?
+  RDet = _mm_div_ss(ZERONE, Det); // TODO: just 1.0f?
   RDet = _mm_shuffle_ps(RDet,RDet,0x00);
 
   // Devide the first 12 minterms with the determinant.
@@ -815,7 +815,7 @@ static inline void inverse(__m128 c0, __m128 c1, __m128 c2, __m128 c3,
   tt = _mm_ror_ps(c2,1);		sum = _mm_mul_ps(tt,r1);
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
   tt = _mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
-  __m128 mtL4 = _mm_xor_ps(sum,Sign_NPNP.m);
+  __m128 mtL4 = _mm_xor_ps(sum,Sign_NPNP);
   mtL4 = _mm_mul_ps(mtL4, RDet);
 
   // Now we just have to transpose the minterms matrix.

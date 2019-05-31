@@ -206,24 +206,16 @@ public:
     }
     else
     {
-      // TODO : see if it is possible to use directly the quaternion rotation
-      aabb.min_ = aabb.max_ = t.getTranslation();
       const Matrix3f& rot = t.getRotation();
       const AABB& aabb_local = cgeom->aabb_local;
-
-      for(int i = 0; i < 3; ++i) {
-        for(int j = 0; j < 3; ++j) {
-          float e = rot(i, j) * aabb_local.min_[j];
-          float f = rot(i, j) * aabb_local.max_[j];
-          if(e < f) {
-            aabb.min_[i] += e;
-            aabb.max_[i] += f;
-          } else {
-            aabb.min_[i] += f;
-            aabb.max_[i] += e;
-          }
-        }
-      }
+      const Vec3f center = 0.5 * (aabb_local.max_ + aabb_local.min_);
+      const Vec3f halfSize = 0.5 * (aabb_local.max_ - aabb_local.min_);
+      const Vec3f newHalfSize(std::abs(rot(0, 0)) * halfSize[0] + std::abs(rot(0, 1)) * halfSize[1] + std::abs(rot(0, 2)) * halfSize[2],
+                              std::abs(rot(1, 0)) * halfSize[0] + std::abs(rot(1, 1)) * halfSize[1] + std::abs(rot(1, 2)) * halfSize[2],
+                              std::abs(rot(2, 0)) * halfSize[0] + std::abs(rot(2, 1)) * halfSize[1] + std::abs(rot(2, 2)) * halfSize[2]);
+      aabb.min_ = aabb.max_ = t.transform(center);
+      aabb.min_ -= newHalfSize;
+      aabb.max_ += newHalfSize;
 //      Vec3f center = t.transform(cgeom->aabb_center);
 //      Vec3f delta(cgeom->aabb_radius);
 //      aabb.min_ = center - delta;

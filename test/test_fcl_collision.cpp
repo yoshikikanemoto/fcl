@@ -45,6 +45,7 @@
 #include "fcl/BV/BV.h"
 #include "fcl/shape/geometric_shapes.h"
 #include "fcl/narrowphase/narrowphase.h"
+#include "fcl/math/sampling.h"
 #include "test_fcl_utility.h"
 #include "fcl_resources/config.h"
 #include <boost/filesystem.hpp>
@@ -77,6 +78,87 @@ bool enable_contact = true;
 
 std::vector<Contact> global_pairs;
 std::vector<Contact> global_pairs_now;
+
+struct AABBProblem {
+    AABB aabbLocal;
+    Transform3f t;
+    AABB aabb;
+    std::shared_ptr<CollisionObject> collisionObject;
+};
+
+BOOST_AUTO_TEST_CASE(AABB_Rotate_test)
+{
+    // test AABB rotation logic returns the same result as brute force one
+    RNG rng;
+    const int N = 100000;
+    std::vector<AABBProblem> problems;
+    problems.reserve(N);
+    std::vector<AABB> answer;
+    answer.reserve(N);
+    const int coef[8][3] = {{1, 1, 1}, {1, 1, -1}, {1, -1, 1}, {1, -1, -1},
+                            {-1, 1, 1}, {-1, 1, -1}, {-1, -1, 1}, {-1, -1, -1}};
+    for (int i = 0; i < N; ++i) {
+        double v1[3];
+        double v2[3];
+        double v3[3];
+        double v[3];
+        rng.ball(0, 100, v[0], v[1], v[2]);
+        rng.ball(0, 100, v1[0], v1[1], v1[2]);
+        rng.ball(0, 100, v2[0], v2[1], v2[2]);
+        rng.ball(0, 100, v3[0], v3[1], v3[2]);
+        AABBProblem p;
+        p.aabbLocal = AABB(Vec3f(v1[0], v1[1], v1[2]), Vec3f(v2[0], v2[1], v2[2]), Vec3f(v3[0], v3[1], v3[2]));
+        double q[4];
+        rng.quaternion(q);
+        p.t.setTranslation(Vec3f(v[0], v[1], v[2]));
+        p.t.setQuatRotation(Quaternion3f(q[3], q[0], q[1], q[2]));
+        std::shared_ptr<Box> box = std::shared_ptr<Box>(new Box);
+        Transform3f offset;
+        constructBox(p.aabbLocal, *box, offset);
+        p.collisionObject = std::shared_ptr<CollisionObject>(new CollisionObject(box, p.t * offset));
+        
+        const Vec3f center = 0.5 * (p.aabbLocal.max_ + p.aabbLocal.min_);
+        const Vec3f halfSize = 0.5 * (p.aabbLocal.max_ - p.aabbLocal.min_);
+        Vec3f ww[8];
+        for(int i = 0; i < 8; ++i) {
+            Vec3f w = center;
+            w[0] +=  coef[i][0]*halfSize[0];
+            w[1] +=  coef[i][1]*halfSize[1];
+            w[2] +=  coef[i][2]*halfSize[2];
+            ww[i] = p.t.getRotation() * w + p.t.getTranslation(); // update rotation matrix cache for fair comparison
+            //ww[i] = p.t.transform(w);
+        }
+        p.aabb = AABB(ww[0]);
+        for(int i = 1; i < 8; ++i) {
+            p.aabb += ww[i];
+        }
+        problems.push_back(p);
+    }
+    
+    Timer timer;
+
+    timer.start();
+    for (int i = 0; i < N; ++i) {
+        const AABBProblem& p = problems[i];
+        p.collisionObject->computeAABB();
+        answer.push_back(p.collisionObject->getAABB());
+    }
+    timer.stop();
+    std::cout << timer.getElapsedTime() << std::endl;
+    
+    // Vec3f newcenter = t.transform(center);
+     // Vec3f delta(aabb_local.radius());
+     // AABB aabb4;
+     // aabb4.min_ = newcenter - delta;
+     // aabb4.max_ = newcenter + delta;
+     // std::cout << aabb4.min_ << aabb4.max_ << 0.5*(aabb4.min_ + aabb4.max_) << 0.5*(aabb4.max_ - aabb4.min_) << std::endl;
+    for (int i = 0; i < N; ++i) {
+        for (int xyz = 0; xyz < 3; ++xyz) {
+            BOOST_TEST(problems[i].aabb.min_[xyz] == answer[i].min_[xyz], boost::test_tools::tolerance(1e-7));
+            BOOST_TEST(problems[i].aabb.max_[xyz] == answer[i].max_[xyz], boost::test_tools::tolerance(1e-7)); 
+        }
+    }
+}
 
 BOOST_AUTO_TEST_CASE(OBB_Box_test)
 {

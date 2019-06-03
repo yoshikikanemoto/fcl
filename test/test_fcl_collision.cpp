@@ -146,12 +146,6 @@ BOOST_AUTO_TEST_CASE(AABB_Rotate_test)
     timer.stop();
     std::cout << timer.getElapsedTime() << std::endl;
     
-    // Vec3f newcenter = t.transform(center);
-     // Vec3f delta(aabb_local.radius());
-     // AABB aabb4;
-     // aabb4.min_ = newcenter - delta;
-     // aabb4.max_ = newcenter + delta;
-     // std::cout << aabb4.min_ << aabb4.max_ << 0.5*(aabb4.min_ + aabb4.max_) << 0.5*(aabb4.max_ - aabb4.min_) << std::endl;
     for (int i = 0; i < N; ++i) {
         for (int xyz = 0; xyz < 3; ++xyz) {
             BOOST_TEST(problems[i].aabb.min_[xyz] == answer[i].min_[xyz], boost::test_tools::tolerance(1e-7));

@@ -213,7 +213,7 @@ public:
       const Vec3f newHalfSize(std::abs(rot(0, 0)) * halfSize[0] + std::abs(rot(0, 1)) * halfSize[1] + std::abs(rot(0, 2)) * halfSize[2],
                               std::abs(rot(1, 0)) * halfSize[0] + std::abs(rot(1, 1)) * halfSize[1] + std::abs(rot(1, 2)) * halfSize[2],
                               std::abs(rot(2, 0)) * halfSize[0] + std::abs(rot(2, 1)) * halfSize[1] + std::abs(rot(2, 2)) * halfSize[2]);
-      aabb.min_ = aabb.max_ = t.transform(center);
+      aabb.min_ = aabb.max_ = rot * center + t.getTranslation(); // reuse cached rotation matrix to do transformation
       aabb.min_ -= newHalfSize;
       aabb.max_ += newHalfSize;
 //      Vec3f center = t.transform(cgeom->aabb_center);

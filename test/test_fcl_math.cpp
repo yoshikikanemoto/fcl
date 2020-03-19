@@ -35,8 +35,10 @@
  */
 
 
+#include <boost/test/tools/old/interface.hpp>
 #define BOOST_TEST_MODULE "FCL_MATH"
 #include <boost/test/unit_test.hpp>
+#include <boost/random.hpp>
 
 #if FCL_HAVE_SSE
   #include "fcl/simd/math_simd_details.h"
@@ -45,6 +47,7 @@
 #include "fcl/math/matrix_3f.h"
 #include "fcl/broadphase/morton.h"
 #include "fcl/config.h"
+#include "test_fcl_utility.h"
 
 using namespace fcl;
 
@@ -639,4 +642,103 @@ BOOST_AUTO_TEST_CASE(morton)
 
   BOOST_CHECK(F1(p).to_ulong() == F4(p));
   BOOST_CHECK(F2(p).to_ullong() == F3(p));
+}
+
+struct EigenValueProblem {
+    Matrix3f m;
+    double eigenvalues[3];
+    Vec3f eigenvectors[3];
+
+    double eigenvalues2[3];
+    Vec3f eigenvectors2[3];
+};
+
+BOOST_AUTO_TEST_CASE(mat3_test_eigen)
+{
+    std::vector<Matrix3f> data;
+    Matrix3f zeros(0, 0, 0,
+                   0, 0, 0,
+                   0, 0, 0);
+    data.push_back(zeros);
+    Matrix3f eye(1, 0, 0,
+                 0, 1, 0,
+                 0, 0, 1);
+    data.push_back(eye);
+    Matrix3f ones(1, 1, 1,
+                  1, 1, 1,
+                  1, 1, 1);
+    data.push_back(ones);
+    Matrix3f seq(1, 4, 5,
+                 4, 2, 6,
+                 5, 6, 3);
+    data.push_back(seq);
+    boost::random::mt19937 rng;
+    boost::random::uniform_real_distribution<double> dist(-1.0, 1.0);
+    for (int idata = 0; idata < 100000; ++idata) {
+        Matrix3f random;
+        for (int irow = 0; irow < 3; ++irow) {
+            for (int icol = 0; icol < 3; ++icol) {
+                random(irow, icol) = dist(rng);
+            }
+        }
+        data.push_back(random);
+    }
+
+    std::vector<EigenValueProblem> problems(data.size());
+    for (size_t iprob = 0; iprob < problems.size(); ++iprob) {
+        problems[iprob].m = (data[iprob] + transpose(data[iprob])) * 0.5; // make it symmetric
+    }
+    Timer timer;
+    timer.start();
+    for (size_t iprob = 0; iprob < problems.size(); ++iprob) {
+        eigen_sym(problems[iprob].m, problems[iprob].eigenvalues, problems[iprob].eigenvectors);
+    }
+    timer.stop();
+    std::cout << "overall time: " << timer.getElapsedTimeInMilliSec() << "[ms]" << std::endl;
+    std::cout << "each time: " << timer.getElapsedTimeInMicroSec()/problems.size() << "[us]" << std::endl;
+
+    Timer timer2;
+    timer2.start();
+    for (size_t iprob = 0; iprob < problems.size(); ++iprob) {
+        eigen(problems[iprob].m, problems[iprob].eigenvalues2, problems[iprob].eigenvectors2);
+    }
+    timer2.stop();
+    std::cout << "overall time: " << timer2.getElapsedTimeInMilliSec() << "[ms]" << std::endl;
+    std::cout << "each time: " << timer2.getElapsedTimeInMicroSec()/problems.size() << "[Us]" << std::endl;
+    
+    for (size_t iprob = 0; iprob < problems.size(); ++iprob) {
+#if 0
+        std::cout << problems[iprob].m << std::endl;
+        for (int irow = 0; irow < 3; ++irow) {
+            const Vec3f v(problems[iprob].eigenvectors[0][irow],
+                          problems[iprob].eigenvectors[1][irow],
+                          problems[iprob].eigenvectors[2][irow]); // be careful about transposed format of eigenvectors
+            std::cout << v << ", " << problems[iprob].eigenvalues[irow] << "\n";
+        }
+        for (int irow = 0; irow < 3; ++irow) {
+            const Vec3f v(problems[iprob].eigenvectors2[0][irow],
+                          problems[iprob].eigenvectors2[1][irow],
+                          problems[iprob].eigenvectors2[2][irow]); // be careful about transposed format of eigenvectors
+            std::cout << v << ", " << problems[iprob].eigenvalues2[irow] << "\n";
+        }
+#endif
+        for (int irow = 0; irow < 3; ++irow) {
+            const Vec3f v(problems[iprob].eigenvectors[0][irow],
+                          problems[iprob].eigenvectors[1][irow],
+                          problems[iprob].eigenvectors[2][irow]); // be careful about transposed format of eigenvectors
+            const Vec3f d = problems[iprob].m * v;
+            BOOST_REQUIRE_LT(std::abs(d[0] - problems[iprob].eigenvalues[irow] * v[0]), 1e-13);
+            BOOST_REQUIRE_LT(std::abs(d[1] - problems[iprob].eigenvalues[irow] * v[1]), 1e-13);
+            BOOST_REQUIRE_LT(std::abs(d[2] - problems[iprob].eigenvalues[irow] * v[2]), 1e-13);
+        }
+        for (int irow = 0; irow < 3; ++irow) {
+            const Vec3f v(problems[iprob].eigenvectors2[0][irow],
+                          problems[iprob].eigenvectors2[1][irow],
+                          problems[iprob].eigenvectors2[2][irow]); // be careful about transposed format of eigenvectors
+            const Vec3f d = problems[iprob].m * v;
+            BOOST_REQUIRE_LT(std::abs(d[0] - problems[iprob].eigenvalues2[irow] * v[0]), 1e-13);
+            BOOST_REQUIRE_LT(std::abs(d[1] - problems[iprob].eigenvalues2[irow] * v[1]), 1e-13);
+            BOOST_REQUIRE_LT(std::abs(d[2] - problems[iprob].eigenvalues2[irow] * v[2]), 1e-13);
+        }
+    }
 }

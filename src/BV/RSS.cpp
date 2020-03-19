@@ -1080,7 +1080,7 @@ RSS RSS::operator + (const RSS& other) const
   Matrix3f::U s[3] = {0, 0, 0};
 
   getCovariance(v, NULL, NULL, NULL, 16, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
 
   int min, mid, max;
   if(s[0] > s[1]) { max = 0; min = 1; }
@@ -1090,11 +1090,9 @@ RSS RSS::operator + (const RSS& other) const
   else { mid = 2; }
 
   // column first matrix, as the axis in RSS
-  bv.axis[0].setValue(E[0][max], E[1][max], E[2][max]);
-  bv.axis[1].setValue(E[0][mid], E[1][mid], E[2][mid]);
-  bv.axis[2].setValue(E[1][max]*E[2][mid] - E[1][mid]*E[2][max],
-                      E[0][mid]*E[2][max] - E[0][max]*E[2][mid],
-                      E[0][max]*E[1][mid] - E[0][mid]*E[1][max]);
+  bv.axis[0] = E[max];
+  bv.axis[1] = E[mid];
+  bv.axis[2] = E[min];
 
   // set rss origin, rectangle size and radius
   getRadiusAndOriginAndRectangleSize(v, NULL, NULL, NULL, 16, bv.axis, bv.Tr, bv.l, bv.r);

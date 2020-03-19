@@ -344,6 +344,145 @@ void relativeTransform(const Matrix3fX<T>& R1, const Vec3fX<typename T::vector_t
   t = R1.transposeTimes(t2 - t1);
 }
 
+template<typename T>
+void compute_non_degenerate_eigenvector(const Matrix3fX<T>& a, typename T::meta_type d, Vec3fX<typename T::vector_type>& v)
+{
+    // eigenvector v of eigenvalue d can be found by finding null space of A-Id
+    // find combination of rows which gives the biggest cross product vector
+    const Vec3f aid0(a(0, 0) - d, a(0, 1), a(0, 2));
+    const Vec3f aid1(a(0, 1), a(1, 1) - d, a(1, 2));
+    const Vec3f aid2(a(0, 2), a(1, 2), a(2, 2) - d);
+    const Vec3f v01 = aid0.cross(aid1);
+    const Vec3f v02 = aid0.cross(aid2);
+    const Vec3f v12 = aid1.cross(aid2);
+    const typename T::meta_type n01 = v01.squaredNorm();
+    const typename T::meta_type n02 = v02.squaredNorm();
+    const typename T::meta_type n12 = v12.squaredNorm();
+    if(n01 >= n02)
+    {
+        if(n01 >= n12)
+        {
+            v = v01/std::sqrt(n01);
+        }
+        else {
+            v = v12/std::sqrt(n12);
+        }
+    }
+    else {
+        if(n02 >= n12)
+        {
+            v = v02/std::sqrt(n02);
+        }
+        else {
+            v = v12/std::sqrt(n12);
+        }
+    }
+}
+
+template<typename T>
+void compute_eigenvector(const Matrix3fX<T>& a, const Vec3fX<typename T::vector_type>& otherv, typename T::meta_type d, Vec3fX<typename T::vector_type>& v)
+{
+    // eigenvector v of eigenvalue d can be found by finding null space of A-Id
+    // but d can be degenerated eigenvalue. which means A-Id can be rank 1
+    // so, use other eigenvector to narrow search space
+    Vec3f u0, u1; // unit vectors orthogonal to otherv
+    if(std::abs(otherv[0]) > std::abs(otherv[1]))
+    {
+        const typename T::meta_type invlen = 1.0 / std::sqrt(otherv[0]*otherv[0] + otherv[2]*otherv[2]);
+        u0.setValue(-otherv[2]*invlen, 0, otherv[0]*invlen);
+    }
+    else {
+        const typename T::meta_type invlen = 1.0 / std::sqrt(otherv[1]*otherv[1] + otherv[2]*otherv[2]);
+        u0.setValue(0, otherv[2]*invlen, -otherv[1]*invlen);
+    }
+    u1 = otherv.cross(u0);
+
+    const Vec3f au0 = a * u0;
+    const Vec3f au1 = a * u1;
+    typename T::meta_type m00 = u0.dot(au0) - d;
+    typename T::meta_type m01 = u0.dot(au1);
+    typename T::meta_type m11 = u1.dot(au1) - d;
+    if(std::abs(m00) >= std::abs(m11)) {
+        if(std::abs(m00) >= std::abs(m01)) {
+            m01 /= m00;
+            m00 = 1.0 / std::sqrt(1.0 + m01 * m01);
+            m01 *= m00;
+        }
+        else {
+            m00 /= m01;
+            m01 = 1.0 / std::sqrt(1.0 + m00 * m00);
+            m00 *= m01;
+        }
+        v = m01*u0 - m00*u1;
+    }
+    else {
+        if(std::abs(m11) >= std::abs(m01)) {
+            m01 /= m11;
+            m11 = 1.0 / std::sqrt(1.0 + m01 * m01);
+            m01 *= m11;
+        }
+        else {
+            m11 /= m01;
+            m01 = 1.0 / std::sqrt(1.0 + m11 * m11);
+            m11 *= m01;
+        }
+        v = m11*u0 - m01*u1;
+    }
+}
+
+/// @brief compute the eigen vector and eigen vector of a symmetric matrix. dout is the eigen values, vout is the eigen vectors
+template<typename T>
+void eigen_sym(const Matrix3fX<T>& a, typename T::meta_type dout[3], Vec3fX<typename T::vector_type> vout[3])
+{
+    const typename T::meta_type nondiagsqrsum = a(0, 1) * a(0, 1) + a(0, 2) * a(0, 2) + a(1, 2) * a(1, 2);
+    if(nondiagsqrsum == 0.0)
+    {
+        for (int ieig = 0; ieig < 3; ++ieig)
+        {
+            dout[ieig] = a(ieig, ieig);
+        }
+        vout[0].setValue(1, 0, 0);
+        vout[1].setValue(0, 1, 0);
+        vout[2].setValue(0, 0, 1);
+        return;
+    }
+    const typename T::meta_type tra = a(0, 0) + a(1, 1) + a(2, 2); // tr(A)
+    const typename T::meta_type q = tra / 3.0; // tr(A) / 3
+    // p = sqrt(tr((A-Iq)^2)/6)
+    // tr(M^2) = sum_ij(Mij^2)
+    Matrix3fX<T> b = a;
+    b(0, 0) -= q;
+    b(1, 1) -= q;
+    b(2, 2) -= q;
+    const typename T::meta_type p = std::sqrt((b(0, 0) * b(0, 0) + b(1, 1) * b(1, 1) + b(2, 2) * b(2, 2) + 2.0 * nondiagsqrsum) / 6.0);
+    // B = (A − qI)/p
+    const typename T::meta_type halfdetb = std::min(std::max(0.5*b.determinant() / (p * p * p), -1.0), 1.0);
+    const typename T::meta_type phi = acos(halfdetb) / 3.0;
+    //  dout[2] <= dout[1] <= dout[0]
+    dout[0] = q + 2.0 * p * cos(phi);
+    dout[2] = q + 2.0 * p * cos(phi + 2.0*M_PI/3.0);
+    dout[1] = tra - dout[0] - dout[2]; // sum of eigenvalues is equal to tr(A)
+    Vec3f v[3];
+    if(halfdetb >= 0)
+    {
+        // non-degenerated eigenvalue should be the biggest one
+        compute_non_degenerate_eigenvector(a, dout[0], v[0]);
+        compute_eigenvector(a, v[0], dout[1], v[1]);
+        v[2] = v[0].cross(v[1]);
+    }
+    else
+    {
+        compute_non_degenerate_eigenvector(a, dout[2], v[2]);
+        compute_eigenvector(a, v[2], dout[1], v[1]);
+        v[0] = v[2].cross(v[1]);
+    }
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            vout[i][j] = v[j][i];
+        }
+    }
+}
+
 /// @brief compute the eigen vector and eigen vector of a matrix. dout is the eigen values, vout is the eigen vectors
 template<typename T>
 void eigen(const Matrix3fX<T>& m, typename T::meta_type dout[3], Vec3fX<typename T::vector_type> vout[3])

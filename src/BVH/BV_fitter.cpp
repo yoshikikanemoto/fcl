@@ -65,6 +65,20 @@ static inline void axisFromEigen(Vec3f eigenV[3], Matrix3f::U eigenS[3], Vec3f a
                    eigenV[0][max]*eigenV[1][mid] - eigenV[0][mid]*eigenV[1][max]);
 }
 
+static inline void axisFromEigenSym(Vec3f eigenV[3], Matrix3f::U eigenS[3], Vec3f axis[3])
+{
+  int min, mid, max;
+  if(eigenS[0] > eigenS[1]) { max = 0; min = 1; }
+  else { min = 0; max = 1; }
+  if(eigenS[2] < eigenS[min]) { mid = min; min = 2; }
+  else if(eigenS[2] > eigenS[max]) { mid = max; max = 2; }
+  else { mid = 2; }
+
+  axis[0] = eigenV[max];
+  axis[1] = eigenV[mid];
+  axis[2] = eigenV[min];
+}
+
 namespace OBB_fit_functions
 {
 
@@ -141,8 +155,8 @@ void fitn(Vec3f* ps, int n, OBB& bv)
   Matrix3f::U s[3] = {0, 0, 0}; // three eigen values
 
   getCovariance(ps, NULL, NULL, NULL, n, M);
-  eigen(M, s, E);
-  axisFromEigen(E, s, bv.axis);
+  eigen_sym(M, s, E);
+  axisFromEigenSym(E, s, bv.axis);
 
   // set obb centers and extensions
   getExtentAndCenter(ps, NULL, NULL, NULL, n, bv.axis, bv.To, bv.extent);
@@ -227,8 +241,8 @@ void fitn(Vec3f* ps, int n, RSS& bv)
   Matrix3f::U s[3] = {0, 0, 0};
 
   getCovariance(ps, NULL, NULL, NULL, n, M);
-  eigen(M, s, E);
-  axisFromEigen(E, s, bv.axis);
+  eigen_sym(M, s, E);
+  axisFromEigenSym(E, s, bv.axis);
 
   // set rss origin, rectangle size and radius
   getRadiusAndOriginAndRectangleSize(ps, NULL, NULL, NULL, n, bv.axis, bv.Tr, bv.l, bv.r);
@@ -344,10 +358,10 @@ void fitn(Vec3f* ps, int n, kIOS& bv)
   Matrix3f::U s[3] = {0, 0, 0}; // three eigen values;
 
   getCovariance(ps, NULL, NULL, NULL, n, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
   
   Vec3f* axis = bv.obb.axis;
-  axisFromEigen(E, s, axis);
+  axisFromEigenSym(E, s, axis);
 
   getExtentAndCenter(ps, NULL, NULL, NULL, n, axis, bv.obb.To, bv.obb.extent);
 
@@ -526,9 +540,9 @@ OBB BVFitter<OBB>::fit(unsigned int* primitive_indices, int num_primitives)
   Matrix3f::U s[3]; // three eigen values
 
   getCovariance(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
 
-  axisFromEigen(E, s, bv.axis);
+  axisFromEigenSym(E, s, bv.axis);
 
   // set obb centers and extensions
   getExtentAndCenter(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, bv.axis, bv.To, bv.extent);
@@ -544,9 +558,9 @@ OBBRSS BVFitter<OBBRSS>::fit(unsigned int* primitive_indices, int num_primitives
   Matrix3f::U s[3];
 
   getCovariance(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
 
-  axisFromEigen(E, s, bv.obb.axis);
+  axisFromEigenSym(E, s, bv.obb.axis);
   bv.rss.axis[0] = bv.obb.axis[0];
   bv.rss.axis[1] = bv.obb.axis[1];
   bv.rss.axis[2] = bv.obb.axis[2];
@@ -574,8 +588,8 @@ RSS BVFitter<RSS>::fit(unsigned int* primitive_indices, int num_primitives)
   Vec3f E[3]; // row first eigen-vectors
   Matrix3f::U s[3]; // three eigen values
   getCovariance(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, M);
-  eigen(M, s, E);
-  axisFromEigen(E, s, bv.axis);
+  eigen_sym(M, s, E);
+  axisFromEigenSym(E, s, bv.axis);
 
   // set rss origin, rectangle size and radius
 
@@ -603,10 +617,10 @@ kIOS BVFitter<kIOS>::fit(unsigned int* primitive_indices, int num_primitives)
   Matrix3f::U s[3];
   
   getCovariance(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
 
   Vec3f* axis = bv.obb.axis;
-  axisFromEigen(E, s, axis);
+  axisFromEigenSym(E, s, axis);
 
   // get centers and extensions
   getExtentAndCenter(vertices, prev_vertices, tri_indices, primitive_indices, num_primitives, axis, bv.obb.To, bv.obb.extent);

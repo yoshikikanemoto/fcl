@@ -90,7 +90,7 @@ inline OBB merge_largedist(const OBB& b1, const OBB& b2)
     vertex_proj[i] = vertex[i] - R0 * vertex[i].dot(R0);
 
   getCovariance(vertex_proj, NULL, NULL, NULL, 16, M);
-  eigen(M, s, E);
+  eigen_sym(M, s, E);
 
   int min, mid, max;
   if (s[0] > s[1]) { max = 0; min = 1; }
@@ -100,8 +100,8 @@ inline OBB merge_largedist(const OBB& b1, const OBB& b2)
   else { mid = 2; }
 
 
-  R1.setValue(E[0][max], E[1][max], E[2][max]);
-  R2.setValue(E[0][mid], E[1][mid], E[2][mid]);
+  R1 = E[max];
+  R2 = E[mid];
 
   // set obb centers and extensions
   Vec3f center, extent;
